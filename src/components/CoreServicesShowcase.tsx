@@ -317,7 +317,7 @@ export default function CoreServicesShowcase() {
           </Reveal>
 
           {/* Right: Interactive Numbered Service Selector */}
-          <Reveal delay={0.08} className="lg:col-span-6">
+          <Reveal delay={0.18} className="lg:col-span-6">
             <div
               role="tablist"
               aria-label="Servicios principales"

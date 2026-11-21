@@ -71,7 +71,7 @@ export default function ValueServicesShowcase() {
           {VALUE_SERVICES.map(({ id, title, description, Icon }, idx) => (
             <Reveal
               key={id}
-              delay={idx * 0.05}
+              delay={idx * 0.12}
               className="flex flex-col items-center text-center px-2"
             >
               <Icon

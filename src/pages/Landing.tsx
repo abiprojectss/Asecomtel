@@ -134,7 +134,11 @@ export default function Landing() {
 
         {/* Editorial Typography & CTA: centered on mobile, left-aligned over open sky on PC */}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <Reveal className="mx-auto lg:mx-0 lg:w-[54%] xl:w-[50%] max-w-2xl text-center lg:text-left">
+          <Reveal
+            duration={0.75}
+            y={18}
+            className="mx-auto lg:mx-0 lg:w-[54%] xl:w-[50%] max-w-2xl text-center lg:text-left"
+          >
             <h1 className="text-[clamp(2.25rem,4.1vw,3.65rem)] font-semibold text-[#00355F] tracking-tight leading-[1.08] text-balance">
               Soluciones de telecomunicaciones{' '}
               <span className="text-[#004E8C]">para empresas</span> en toda España
@@ -260,7 +264,7 @@ export default function Landing() {
 
           {/* Right Column: Form Card */}
           <Reveal
-            delay={0.08}
+            delay={0.18}
             className="lg:col-span-7 bg-white rounded-2xl shadow-lg border border-[#D2E4FF] p-6 sm:p-8 lg:p-9"
           >
             {visitSubmitted ? (
