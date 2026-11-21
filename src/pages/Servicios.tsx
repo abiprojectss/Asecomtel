@@ -68,9 +68,9 @@ export default function Servicios() {
   return (
     <div className="bg-white">
       {/* Page Banner */}
-      <section className="bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="bg-[#00355F] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4">
             Nuestros Servicios
           </h1>
           <p className="text-white/90 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -80,7 +80,7 @@ export default function Servicios() {
       </section>
 
       {/* Services Grid */}
-      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-[#EAF1FF]">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Row 1: Flagship Yoigo Connectivity Cards */}
           <Reveal>
@@ -88,13 +88,13 @@ export default function Servicios() {
               {FEATURED_SERVICES.map(({ title, description, Icon }) => (
                 <div
                   key={title}
-                  className="bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] text-white p-7 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="bg-[#00355F] text-white p-7 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
                     <div className="w-12 h-12 rounded-lg bg-white/15 flex items-center justify-center mb-5">
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold mb-3 tracking-tight leading-snug">
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-3 tracking-tight leading-snug">
                       {title}
                     </h2>
                     <p className="text-white/95 text-sm sm:text-base leading-relaxed">
@@ -121,13 +121,13 @@ export default function Servicios() {
               {ADDITIONAL_SERVICES.map(({ title, description, Icon, colSpan }) => (
                 <div
                   key={title}
-                  className={`bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-7 shadow-xs hover:border-[#1b62b0]/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between ${colSpan}`}
+                  className={`bg-white border border-[#D2E4FF] rounded-xl p-6 sm:p-7 shadow-xs hover:border-[#00355F]/40 hover:shadow-md transition-all duration-300 flex flex-col justify-between ${colSpan}`}
                 >
                   <div>
-                    <div className="w-11 h-11 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center mb-4">
+                    <div className="w-11 h-11 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center mb-4">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <h2 className="text-xl font-extrabold text-[#1b62b0] mb-3 tracking-tight leading-snug">
+                    <h2 className="text-xl font-semibold text-[#00355F] mb-3 tracking-tight leading-snug">
                       {title}
                     </h2>
                     <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
@@ -141,9 +141,9 @@ export default function Servicios() {
 
           {/* Bottom CTA */}
           <Reveal delay={0.12}>
-            <div className="mt-4 bg-gradient-to-br from-[#1b62b0] to-[#144a84] text-white rounded-xl p-7 sm:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
+            <div className="mt-4 bg-[#00355F] text-white rounded-xl p-7 sm:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
               <div className="space-y-1.5 max-w-2xl">
-                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">
                   ¿Necesitas asesoramiento personalizado para tu empresa?
                 </h3>
                 <p className="text-white/90 text-sm sm:text-base">
@@ -152,7 +152,7 @@ export default function Servicios() {
               </div>
               <Link
                 to="/contactanos"
-                className="inline-flex items-center gap-2 bg-white text-[#1b62b0] font-bold text-sm sm:text-base px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors shrink-0"
+                className="inline-flex items-center gap-2 bg-white text-[#00355F] font-bold text-sm sm:text-base px-6 py-3 rounded-lg hover:bg-[#EAF1FF] transition-colors shrink-0"
               >
                 <span>Contáctanos</span>
                 <ArrowRight className="w-4 h-4" />

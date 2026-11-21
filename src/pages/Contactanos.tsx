@@ -2,12 +2,28 @@ import React, { useState } from 'react';
 import { Phone, Mail, MapPin, CheckCircle2, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import Reveal from '../components/Reveal';
 import LocationMapPreview from '../components/LocationMapPreview';
+import {
+  FIELD_LIMITS,
+  validateEmail,
+  validatePersonName,
+  validatePhone,
+  validateTextBlock,
+} from '../../api/_validation';
+
+type ContactField =
+  | 'nombre'
+  | 'apellidos'
+  | 'numeros'
+  | 'email'
+  | 'mensaje'
+  | 'privacidadAceptada';
 
 export default function Contactanos() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ContactField, string>>>({});
   const [formData, setFormData] = useState({
     nombre: '',
     apellidos: '',
@@ -15,12 +31,44 @@ export default function Contactanos() {
     email: '',
     mensaje: '',
     privacidadAceptada: false,
+    website: '',
   });
+
+  const validateContactForm = () => {
+    const errors: Partial<Record<ContactField, string>> = {};
+    const nombreErr = validatePersonName(formData.nombre, 'El nombre');
+    const apellidosErr = validatePersonName(formData.apellidos, 'Los apellidos');
+    const phoneErr = validatePhone(formData.numeros, false);
+    const emailErr = validateEmail(formData.email);
+    const mensajeErr = validateTextBlock(formData.mensaje, {
+      required: true,
+      min: FIELD_LIMITS.messageMin,
+      max: FIELD_LIMITS.messageMax,
+      label: 'Comentario o mensaje',
+    });
+
+    if (nombreErr) errors.nombre = nombreErr;
+    if (apellidosErr) errors.apellidos = apellidosErr;
+    if (phoneErr) errors.numeros = phoneErr;
+    if (emailErr) errors.email = emailErr;
+    if (mensajeErr) errors.mensaje = mensajeErr;
+    if (!formData.privacidadAceptada) {
+      errors.privacidadAceptada = 'Debes aceptar la Política de Privacidad para continuar.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitError(null);
+
+    if (!validateContactForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/send-form', {
@@ -58,6 +106,7 @@ export default function Contactanos() {
   const resetForm = () => {
     setFormSubmitted(false);
     setSubmitError(null);
+    setFieldErrors({});
     setFormData({
       nombre: '',
       apellidos: '',
@@ -65,15 +114,16 @@ export default function Contactanos() {
       email: '',
       mensaje: '',
       privacidadAceptada: false,
+      website: '',
     });
   };
 
   return (
     <div className="bg-white">
       {/* Page Banner */}
-      <section className="bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="bg-[#00355F] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4">
             Contáctanos
           </h1>
           <p className="text-white/90 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -83,21 +133,21 @@ export default function Contactanos() {
       </section>
 
       {/* Contact Content */}
-      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-[#EAF1FF]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
           {/* Left Column: Contact Info + Compact Map Preview */}
           <Reveal className="lg:col-span-5 space-y-6">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-7 shadow-xs">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#1b62b0] mb-1">
+            <div className="bg-white border border-[#D2E4FF] rounded-xl p-6 sm:p-7 shadow-xs">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#00355F] mb-1">
                 Encuentranos en
               </p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-6">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-[#00355F] tracking-tight mb-6">
                 AsecomTel
               </h2>
 
               <div className="space-y-5">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
@@ -111,7 +161,7 @@ export default function Contactanos() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0">
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
@@ -120,7 +170,7 @@ export default function Contactanos() {
                     </h3>
                     <a
                       href="tel:968959545"
-                      className="text-[#1b62b0] font-bold hover:underline text-base"
+                      className="text-[#00355F] font-bold hover:underline text-base"
                     >
                       968 959 545
                     </a>
@@ -128,7 +178,7 @@ export default function Contactanos() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
@@ -137,7 +187,7 @@ export default function Contactanos() {
                     </h3>
                     <a
                       href="mailto:info@asecomtel.es"
-                      className="text-[#1b62b0] font-bold hover:underline text-base"
+                      className="text-[#00355F] font-bold hover:underline text-base"
                     >
                       info@asecomtel.es
                     </a>
@@ -151,7 +201,7 @@ export default function Contactanos() {
           </Reveal>
 
           {/* Right Column: Contact Form & Data Protection Notice */}
-          <Reveal delay={0.08} className="lg:col-span-7 bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">
+          <Reveal delay={0.08} className="lg:col-span-7 bg-white border border-[#D2E4FF] rounded-xl p-6 sm:p-8 shadow-xs">
             {formSubmitted ? (
               <div className="text-center py-14 space-y-4">
                 <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto" />
@@ -164,16 +214,28 @@ export default function Contactanos() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="text-sm font-semibold text-[#1b62b0] hover:underline cursor-pointer"
+                    className="text-sm font-semibold text-[#00355F] hover:underline cursor-pointer"
                   >
                     Enviar otra consulta
                   </button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                {/* Honeypot anti-spam field */}
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  className="hidden"
+                />
+
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1b62b0] mb-1">
+                  <h2 className="text-2xl font-bold text-[#00355F] mb-1">
                     Envíanos tu consulta
                   </h2>
                   <p className="text-slate-600 text-sm">
@@ -191,25 +253,59 @@ export default function Contactanos() {
                       <input
                         type="text"
                         required
+                        maxLength={FIELD_LIMITS.nameMax}
+                        autoComplete="given-name"
+                        aria-invalid={Boolean(fieldErrors.nombre)}
                         value={formData.nombre}
-                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, nombre: e.target.value });
+                          if (fieldErrors.nombre) {
+                            setFieldErrors({ ...fieldErrors, nombre: undefined });
+                          }
+                        }}
                         placeholder="Nombre"
                         aria-label="Nombre"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                        className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                          fieldErrors.nombre
+                            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                            : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                        }`}
                       />
                       <span className="block text-[11px] text-slate-500 mt-1">Nombre</span>
+                      {fieldErrors.nombre && (
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                          {fieldErrors.nombre}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <input
                         type="text"
                         required
+                        maxLength={FIELD_LIMITS.nameMax}
+                        autoComplete="family-name"
+                        aria-invalid={Boolean(fieldErrors.apellidos)}
                         value={formData.apellidos}
-                        onChange={(e) => setFormData({ ...formData, apellidos: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, apellidos: e.target.value });
+                          if (fieldErrors.apellidos) {
+                            setFieldErrors({ ...fieldErrors, apellidos: undefined });
+                          }
+                        }}
                         placeholder="Apellidos"
                         aria-label="Apellidos"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                        className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                          fieldErrors.apellidos
+                            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                            : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                        }`}
                       />
                       <span className="block text-[11px] text-slate-500 mt-1">Apellidos</span>
+                      {fieldErrors.apellidos && (
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                          {fieldErrors.apellidos}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -225,11 +321,27 @@ export default function Contactanos() {
                   <input
                     id="contact-numeros"
                     type="tel"
+                    inputMode="tel"
+                    maxLength={FIELD_LIMITS.phoneMax}
+                    autoComplete="tel"
+                    aria-invalid={Boolean(fieldErrors.numeros)}
                     value={formData.numeros}
-                    onChange={(e) => setFormData({ ...formData, numeros: e.target.value })}
-                    placeholder="Teléfono de contacto"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                    onChange={(e) => {
+                      setFormData({ ...formData, numeros: e.target.value });
+                      if (fieldErrors.numeros) {
+                        setFieldErrors({ ...fieldErrors, numeros: undefined });
+                      }
+                    }}
+                    placeholder="Teléfono de contacto (ej. 600 123 456)"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                      fieldErrors.numeros
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                    }`}
                   />
+                  {fieldErrors.numeros && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.numeros}</p>
+                  )}
                 </div>
 
                 {/* Correo electrónico * */}
@@ -244,11 +356,24 @@ export default function Contactanos() {
                     id="contact-email"
                     type="email"
                     required
+                    maxLength={FIELD_LIMITS.emailMax}
+                    autoComplete="email"
+                    aria-invalid={Boolean(fieldErrors.email)}
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined });
+                    }}
                     placeholder="correo@ejemplo.com"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                      fieldErrors.email
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                    }`}
                   />
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 {/* Comentario o mensaje * */}
@@ -263,11 +388,25 @@ export default function Contactanos() {
                     id="contact-mensaje"
                     rows={4}
                     required
+                    maxLength={FIELD_LIMITS.messageMax}
+                    aria-invalid={Boolean(fieldErrors.mensaje)}
                     value={formData.mensaje}
-                    onChange={(e) => setFormData({ ...formData, mensaje: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, mensaje: e.target.value });
+                      if (fieldErrors.mensaje) {
+                        setFieldErrors({ ...fieldErrors, mensaje: undefined });
+                      }
+                    }}
                     placeholder="Escribe aquí tu comentario, duda o mensaje..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all resize-none"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all resize-none ${
+                      fieldErrors.mensaje
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                    }`}
                   />
+                  {fieldErrors.mensaje && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.mensaje}</p>
+                  )}
                 </div>
 
                 {/* Politica de privacidad * */}
@@ -280,17 +419,25 @@ export default function Contactanos() {
                       type="checkbox"
                       required
                       checked={formData.privacidadAceptada}
-                      onChange={(e) =>
-                        setFormData({ ...formData, privacidadAceptada: e.target.checked })
-                      }
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1b62b0] focus:ring-[#1b62b0] cursor-pointer"
+                      onChange={(e) => {
+                        setFormData({ ...formData, privacidadAceptada: e.target.checked });
+                        if (fieldErrors.privacidadAceptada) {
+                          setFieldErrors({ ...fieldErrors, privacidadAceptada: undefined });
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-[#00355F] focus:ring-[#00355F] cursor-pointer"
                     />
                     <span>He leído y acepto la Política de Privacidad</span>
                   </label>
+                  {fieldErrors.privacidadAceptada && (
+                    <p className="text-xs font-medium text-red-600">
+                      {fieldErrors.privacidadAceptada}
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => setPrivacyModalOpen(true)}
-                    className="text-xs text-[#1b62b0] hover:underline font-medium text-left cursor-pointer block"
+                    className="text-xs text-[#00355F] hover:underline font-medium text-left cursor-pointer block"
                   >
                     Haz clic en el siguiente enlace para leer la Política de Privacidad antes de aceptarla.
                   </button>
@@ -308,7 +455,7 @@ export default function Contactanos() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#1b62b0] hover:bg-[#165194] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-[#00355F] hover:bg-[#002645] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>{isSubmitting ? 'Enviando...' : 'Enviar'}</span>
                   {!isSubmitting && <ArrowRight className="w-4 h-4" />}
@@ -353,10 +500,10 @@ export default function Contactanos() {
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-[#1b62b0]">Política de Privacidad</h3>
+              <h3 className="text-xl font-bold text-[#00355F]">Política de Privacidad</h3>
             </div>
 
             <div className="text-slate-600 text-sm leading-relaxed space-y-3">
@@ -379,7 +526,7 @@ export default function Contactanos() {
               <p>
                 <strong>Derechos:</strong> En cualquier momento puedes limitar, recuperar y borrar tu
                 información enviando una solicitud a{' '}
-                <a href="mailto:info@asecomtel.es" className="text-[#1b62b0] font-semibold hover:underline">
+                <a href="mailto:info@asecomtel.es" className="text-[#00355F] font-semibold hover:underline">
                   info@asecomtel.es
                 </a>{' '}
                 o por correo postal a Calle San Luis, 46, 2ºB, 30730 San Javier (Murcia).
@@ -391,9 +538,10 @@ export default function Contactanos() {
                 type="button"
                 onClick={() => {
                   setFormData((prev) => ({ ...prev, privacidadAceptada: true }));
+                  setFieldErrors((prev) => ({ ...prev, privacidadAceptada: undefined }));
                   setPrivacyModalOpen(false);
                 }}
-                className="bg-[#1b62b0] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#165194] transition-colors cursor-pointer"
+                className="bg-[#00355F] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#002645] transition-colors cursor-pointer"
               >
                 Aceptar y cerrar
               </button>

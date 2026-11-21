@@ -48,7 +48,7 @@ function AnimatedCoreServiceIcon({ id }: { id: CoreServiceId }) {
   switch (id) {
     case 'fibra':
       return (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#1b62b0]" fill="none">
+        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#00355F]" fill="none">
           <motion.circle
             cx="60"
             cy="84"
@@ -91,7 +91,7 @@ function AnimatedCoreServiceIcon({ id }: { id: CoreServiceId }) {
 
     case 'telefonia':
       return (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#1b62b0]" fill="none">
+        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#00355F]" fill="none">
           {/* Desktop / Landline base & handset on the left */}
           <rect
             x="20"
@@ -170,7 +170,7 @@ function AnimatedCoreServiceIcon({ id }: { id: CoreServiceId }) {
 
     case 'ip':
       return (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#1b62b0]" fill="none">
+        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#00355F]" fill="none">
           <motion.path
             d="M60 18L94 31V57C94 78.5 79.4 95.5 60 102C40.6 95.5 26 78.5 26 57V31L60 18Z"
             fill="white"
@@ -218,7 +218,7 @@ function AnimatedCoreServiceIcon({ id }: { id: CoreServiceId }) {
 
     case 'centralita':
       return (
-        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#1b62b0]" fill="none">
+        <svg viewBox="0 0 120 120" className="w-28 h-28 sm:w-32 sm:h-32 text-[#00355F]" fill="none">
           <motion.g
             animate={{ rotate: [-6, 6, -6, 6, 0] }}
             transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 0.6, ease: 'easeInOut' }}
@@ -265,17 +265,7 @@ export default function CoreServicesShowcase() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left: Animated Icon Stage + Floating Description Box */}
           <Reveal className="lg:col-span-6">
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] shadow-xl min-h-[380px] sm:min-h-[430px] flex flex-col justify-between p-5 sm:p-7">
-              {/* Subtle geometric backdrop glow */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-2xl"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-sky-300/10 blur-2xl"
-              />
-
+            <div className="relative rounded-2xl overflow-hidden bg-[#EAF1FF] border border-[#D2E4FF] shadow-md min-h-[380px] sm:min-h-[430px] flex flex-col justify-between p-5 sm:p-7">
               {/* Center Animated Icon */}
               <div className="relative z-10 flex-1 flex items-center justify-center py-6">
                 <AnimatePresence mode="wait">
@@ -287,15 +277,15 @@ export default function CoreServicesShowcase() {
                     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                     className="relative flex items-center justify-center"
                   >
-                    <div className="w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-white shadow-lg flex items-center justify-center">
+                    <div className="w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-white shadow-md flex items-center justify-center">
                       <AnimatedCoreServiceIcon id={activeService.id} />
                     </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
 
-              {/* Bottom Glass Description Card */}
-              <div className="relative z-10 bg-slate-950/60 backdrop-blur-md border border-white/15 rounded-xl p-5 text-white shadow-lg">
+              {/* Bottom Description Card */}
+              <div className="relative z-10 bg-white border border-[#D2E4FF] rounded-xl p-5 shadow-xs">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeService.id}
@@ -305,16 +295,16 @@ export default function CoreServicesShowcase() {
                     transition={{ duration: 0.25 }}
                     className="space-y-2"
                   >
-                    <h3 className="text-lg sm:text-xl font-bold tracking-tight">
+                    <h3 className="text-lg sm:text-xl font-semibold tracking-tight text-[#00355F]">
                       {activeService.title}
                     </h3>
-                    <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
                       {activeService.description}
                     </p>
                     <div className="pt-1">
                       <Link
                         to="/contactanos"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-200 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#00355F] hover:text-[#002645] hover:underline transition-colors"
                       >
                         <span>Solicitar información</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -331,7 +321,7 @@ export default function CoreServicesShowcase() {
             <div
               role="tablist"
               aria-label="Servicios principales"
-              className="border-t border-[#1b62b0]/40 divide-y divide-slate-200"
+              className="border-t border-[#00355F]/35 divide-y divide-slate-200"
             >
               {CORE_SERVICES.map((service, idx) => {
                 const isActive = idx === activeIndex;
@@ -343,22 +333,22 @@ export default function CoreServicesShowcase() {
                     aria-selected={isActive}
                     onClick={() => setActiveIndex(idx)}
                     className={`group w-full flex items-center justify-between gap-4 py-6 sm:py-7 px-3 text-left transition-colors cursor-pointer ${
-                      isActive ? 'bg-white/75 backdrop-blur-xs' : 'hover:bg-white/50'
+                      isActive ? 'bg-[#EAF1FF]' : 'hover:bg-[#EAF1FF]/55'
                     }`}
                   >
                     <div className="flex items-baseline gap-4 sm:gap-5 min-w-0">
                       <span
                         className={`text-xs sm:text-sm font-bold tabular-nums shrink-0 transition-colors ${
-                          isActive ? 'text-[#1b62b0]' : 'text-slate-400 group-hover:text-slate-600'
+                          isActive ? 'text-[#00355F]' : 'text-slate-400 group-hover:text-[#00355F]/75'
                         }`}
                       >
                         {service.num}
                       </span>
                       <span
-                        className={`text-lg sm:text-2xl font-extrabold tracking-tight transition-colors ${
+                        className={`font-display text-lg sm:text-2xl font-semibold tracking-tight transition-colors ${
                           isActive
-                            ? 'text-[#1b62b0]'
-                            : 'text-slate-900 group-hover:text-[#1b62b0]'
+                            ? 'text-[#00355F]'
+                            : 'text-slate-900 group-hover:text-[#00355F]'
                         }`}
                       >
                         {service.title}
@@ -368,8 +358,8 @@ export default function CoreServicesShowcase() {
                     <span
                       className={`shrink-0 flex items-center justify-center transition-all duration-200 ${
                         isActive
-                          ? 'w-9 h-9 rounded-full bg-[#1b62b0] text-white shadow-sm'
-                          : 'w-9 h-9 text-slate-500 group-hover:text-[#1b62b0] group-hover:translate-x-0.5 group-hover:-translate-y-0.5'
+                          ? 'w-9 h-9 rounded-full bg-[#00355F] text-white shadow-sm'
+                          : 'w-9 h-9 text-slate-500 group-hover:text-[#00355F] group-hover:translate-x-0.5 group-hover:-translate-y-0.5'
                       }`}
                     >
                       {isActive ? (

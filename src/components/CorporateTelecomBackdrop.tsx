@@ -8,7 +8,7 @@ export default function CorporateTelecomBackdrop() {
         viewBox="0 0 1440 820"
         fill="none"
         preserveAspectRatio="xMidYMid slice"
-        className="w-full h-full text-[#1b62b0] opacity-[0.11]"
+        className="w-full h-full text-[#00355F] opacity-[0.1]"
       >
         <defs>
           <radialGradient id="telecom-backdrop-fade" cx="46%" cy="52%" r="58%">

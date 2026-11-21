@@ -1,4 +1,16 @@
 import nodemailer from 'nodemailer';
+import {
+  FIELD_LIMITS,
+  isAllowedCvFilename,
+  sanitizeCvFilename,
+  sanitizeMultiLine,
+  sanitizeSingleLine,
+  stripHeaderNewlines,
+  validateEmail,
+  validatePersonName,
+  validatePhone,
+  validateTextBlock,
+} from './_validation.ts';
 
 export type FormKind = 'visit' | 'contact' | 'apply';
 
@@ -17,9 +29,72 @@ export interface SendFormResult {
   };
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ALLOWED_CV_EXTENSIONS = ['.pdf', '.doc', '.docx'];
-const MAX_CV_BYTES = 3 * 1024 * 1024; // 3 MB
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_MAX_REQUESTS = 5;
+const BASE64_REGEX = /^[A-Za-z0-9+/=\s]+$/;
+const rateLimitStore = new Map<string, number[]>();
+
+function isRateLimited(clientIp: string): boolean {
+  const key = clientIp || 'unknown';
+  const now = Date.now();
+  const windowStart = now - RATE_WINDOW_MS;
+  const recent = (rateLimitStore.get(key) || []).filter((ts) => ts > windowStart);
+
+  if (recent.length >= RATE_MAX_REQUESTS) {
+    rateLimitStore.set(key, recent);
+    return true;
+  }
+
+  recent.push(now);
+  rateLimitStore.set(key, recent);
+
+  if (rateLimitStore.size > 500) {
+    for (const [storedIp, timestamps] of rateLimitStore.entries()) {
+      if (!timestamps.some((ts) => ts > windowStart)) {
+        rateLimitStore.delete(storedIp);
+      }
+    }
+  }
+
+  return false;
+}
+
+function hasValidMagicBytes(filename: string, buffer: Buffer): boolean {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.pdf')) {
+    return (
+      buffer.byteLength >= 5 &&
+      buffer[0] === 0x25 && // %
+      buffer[1] === 0x50 && // P
+      buffer[2] === 0x44 && // D
+      buffer[3] === 0x46 && // F
+      buffer[4] === 0x2d // -
+    );
+  }
+  if (lower.endsWith('.docx')) {
+    return (
+      buffer.byteLength >= 4 &&
+      buffer[0] === 0x50 && // P
+      buffer[1] === 0x4b && // K
+      buffer[2] === 0x03 &&
+      buffer[3] === 0x04
+    );
+  }
+  if (lower.endsWith('.doc')) {
+    return (
+      buffer.byteLength >= 8 &&
+      buffer[0] === 0xd0 &&
+      buffer[1] === 0xcf &&
+      buffer[2] === 0x11 &&
+      buffer[3] === 0xe0 &&
+      buffer[4] === 0xa1 &&
+      buffer[5] === 0xb1 &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0xe1
+    );
+  }
+  return false;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -28,10 +103,6 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
-}
-
-function asTrimmedString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function buildInfoTable(rows: Array<{ label: string; value: string }>): string {
@@ -66,8 +137,11 @@ function wrapEmailLayout(title: string, subtitle: string, tableHtml: string): st
   </div>`;
 }
 
-export async function processFormSubmission(rawPayload: unknown): Promise<SendFormResult> {
-  if (!rawPayload || typeof rawPayload !== 'object') {
+export async function processFormSubmission(
+  rawPayload: unknown,
+  clientIp = ''
+): Promise<SendFormResult> {
+  if (!rawPayload || typeof rawPayload !== 'object' || Array.isArray(rawPayload)) {
     return {
       status: 400,
       body: { ok: false, error: 'Datos de formulario inválidos.' },
@@ -75,14 +149,39 @@ export async function processFormSubmission(rawPayload: unknown): Promise<SendFo
   }
 
   const payload = rawPayload as Record<string, unknown>;
-  const type = payload.type as FormKind;
 
+  // Silent honeypot trap for automated spam bots
+  if (typeof payload.website === 'string' && payload.website.trim().length > 0) {
+    return {
+      status: 200,
+      body: { ok: true, message: 'Solicitud recibida.' },
+    };
+  }
+
+  if (isRateLimited(clientIp)) {
+    return {
+      status: 429,
+      body: {
+        ok: false,
+        error: 'Has realizado demasiados envíos seguidos. Por favor, espera unos minutos.',
+      },
+    };
+  }
+
+  const type = payload.type as FormKind;
   if (type !== 'visit' && type !== 'contact' && type !== 'apply') {
     return {
       status: 400,
       body: { ok: false, error: 'Tipo de formulario no válido.' },
     };
   }
+
+  let to = '';
+  let subject = '';
+  let replyTo = '';
+  let html = '';
+  let text = '';
+  const attachments: Array<{ filename: string; content: Buffer; contentType?: string }> = [];
 
   const smtpHost = process.env.SMTP_HOST || 'mail.asecomtel.es';
   const smtpPort = Number(process.env.SMTP_PORT || '465');
@@ -92,50 +191,32 @@ export async function processFormSubmission(rawPayload: unknown): Promise<SendFo
       : smtpPort === 465;
   const smtpUser = process.env.SMTP_USER || 'backoffice5@asecomtel.es';
   const smtpPass = process.env.SMTP_PASS || '';
-
-  if (!smtpPass) {
-    return {
-      status: 422,
-      body: {
-        ok: false,
-        error:
-          'Falta configurar la contraseña SMTP (SMTP_PASS) en Secrets o variables de entorno del servidor para poder enviar correos.',
-      },
-    };
-  }
-
   const commercialRecipient = process.env.MAIL_TO_COMMERCIAL || smtpUser;
   const recruitingRecipient = process.env.MAIL_TO_RECRUITING || smtpUser;
 
-  let to = commercialRecipient;
-  let subject = '';
-  let replyTo = '';
-  let html = '';
-  let text = '';
-  const attachments: Array<{ filename: string; content: Buffer; contentType?: string }> = [];
-
   if (type === 'visit') {
-    const nombre = asTrimmedString(payload.nombre);
-    const email = asTrimmedString(payload.email);
-    const telefono = asTrimmedString(payload.telefono);
-    const privacidad = payload.privacidad === true;
+    const nombreErr = validatePersonName(payload.nombre, 'Tu nombre');
+    const emailErr = validateEmail(payload.email);
+    const phoneErr = validatePhone(payload.telefono, true);
+    const privacyOk = payload.privacidad === true;
 
-    if (!nombre || !email || !telefono || !privacidad) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'Por favor, completa todos los campos obligatorios.' },
-      };
+    const firstError =
+      nombreErr ||
+      emailErr ||
+      phoneErr ||
+      (!privacyOk ? 'Debes aceptar la Política de Privacidad.' : null);
+
+    if (firstError) {
+      return { status: 400, body: { ok: false, error: firstError } };
     }
-    if (!EMAIL_REGEX.test(email)) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'El correo electrónico introducido no es válido.' },
-      };
-    }
+
+    const nombre = sanitizeSingleLine(payload.nombre);
+    const email = sanitizeSingleLine(payload.email);
+    const telefono = sanitizeSingleLine(payload.telefono);
 
     to = commercialRecipient;
-    replyTo = email;
-    subject = `[Web Asecomtel] Solicitud de visita comercial - ${nombre}`;
+    replyTo = stripHeaderNewlines(email);
+    subject = stripHeaderNewlines(`[Web Asecomtel] Solicitud de visita comercial - ${nombre}`);
     const rows = [
       { label: 'Formulario', value: '¿Quieres que te visite un comercial? (Inicio)' },
       { label: 'Nombre', value: nombre },
@@ -150,29 +231,39 @@ export async function processFormSubmission(rawPayload: unknown): Promise<SendFo
     );
     text = rows.map((r) => `${r.label}: ${r.value}`).join('\n');
   } else if (type === 'contact') {
-    const nombre = asTrimmedString(payload.nombre);
-    const apellidos = asTrimmedString(payload.apellidos);
-    const numeros = asTrimmedString(payload.numeros);
-    const email = asTrimmedString(payload.email);
-    const mensaje = asTrimmedString(payload.mensaje);
-    const privacidadAceptada = payload.privacidadAceptada === true;
+    const nombreErr = validatePersonName(payload.nombre, 'El nombre');
+    const apellidosErr = validatePersonName(payload.apellidos, 'Los apellidos');
+    const phoneErr = validatePhone(payload.numeros, false);
+    const emailErr = validateEmail(payload.email);
+    const mensajeErr = validateTextBlock(payload.mensaje, {
+      required: true,
+      min: FIELD_LIMITS.messageMin,
+      max: FIELD_LIMITS.messageMax,
+      label: 'Comentario o mensaje',
+    });
+    const privacyOk = payload.privacidadAceptada === true;
 
-    if (!nombre || !apellidos || !email || !mensaje || !privacidadAceptada) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'Por favor, completa todos los campos obligatorios.' },
-      };
+    const firstError =
+      nombreErr ||
+      apellidosErr ||
+      phoneErr ||
+      emailErr ||
+      mensajeErr ||
+      (!privacyOk ? 'Debes aceptar la Política de Privacidad.' : null);
+
+    if (firstError) {
+      return { status: 400, body: { ok: false, error: firstError } };
     }
-    if (!EMAIL_REGEX.test(email)) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'El correo electrónico introducido no es válido.' },
-      };
-    }
+
+    const nombre = sanitizeSingleLine(payload.nombre);
+    const apellidos = sanitizeSingleLine(payload.apellidos);
+    const numeros = sanitizeSingleLine(payload.numeros);
+    const email = sanitizeSingleLine(payload.email);
+    const mensaje = sanitizeMultiLine(payload.mensaje);
 
     to = commercialRecipient;
-    replyTo = email;
-    subject = `[Web Asecomtel] Nuevo mensaje de contacto - ${nombre} ${apellidos}`;
+    replyTo = stripHeaderNewlines(email);
+    subject = stripHeaderNewlines(`[Web Asecomtel] Nuevo mensaje de contacto - ${nombre} ${apellidos}`);
     const rows = [
       { label: 'Formulario', value: 'Contáctanos' },
       { label: 'Nombre', value: nombre },
@@ -189,65 +280,104 @@ export async function processFormSubmission(rawPayload: unknown): Promise<SendFo
     );
     text = rows.map((r) => `${r.label}: ${r.value}`).join('\n');
   } else {
-    const nombre = asTrimmedString(payload.nombre);
-    const email = asTrimmedString(payload.email);
-    const telefono = asTrimmedString(payload.telefono);
-    const sobreTi = asTrimmedString(payload.sobreTi);
-    const privacidadAceptada = payload.privacidadAceptada === true;
+    const nombreErr = validatePersonName(payload.nombre, 'Tu nombre');
+    const emailErr = validateEmail(payload.email);
+    const phoneErr = validatePhone(payload.telefono, true);
+    const aboutErr = validateTextBlock(payload.sobreTi, {
+      required: false,
+      max: FIELD_LIMITS.aboutMax,
+      label: 'Sobre ti',
+    });
+    const privacyOk = payload.privacidadAceptada === true;
 
-    if (!nombre || !email || !telefono || !privacidadAceptada) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'Por favor, completa todos los campos obligatorios.' },
-      };
+    const firstError =
+      nombreErr ||
+      emailErr ||
+      phoneErr ||
+      aboutErr ||
+      (!privacyOk ? 'Debes aceptar la Política de Privacidad.' : null);
+
+    if (firstError) {
+      return { status: 400, body: { ok: false, error: firstError } };
     }
-    if (!EMAIL_REGEX.test(email)) {
-      return {
-        status: 400,
-        body: { ok: false, error: 'El correo electrónico introducido no es válido.' },
-      };
-    }
+
+    const nombre = sanitizeSingleLine(payload.nombre);
+    const email = sanitizeSingleLine(payload.email);
+    const telefono = sanitizeSingleLine(payload.telefono);
+    const sobreTi = sanitizeMultiLine(payload.sobreTi);
 
     const cvRaw = payload.cv as Partial<CvAttachmentPayload> | undefined;
     let cvLabel = 'No adjuntado';
 
-    if (cvRaw && typeof cvRaw === 'object' && cvRaw.contentBase64) {
-      const filename = asTrimmedString(cvRaw.filename) || 'curriculum.pdf';
-      const lowerName = filename.toLowerCase();
-      const hasValidExt = ALLOWED_CV_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
-
-      if (!hasValidExt) {
-        return {
-          status: 400,
-          body: {
-            ok: false,
-            error: 'El currículum debe estar en formato PDF, DOC o DOCX.',
-          },
-        };
+    if (cvRaw !== undefined) {
+      if (typeof cvRaw !== 'object' || cvRaw === null || Array.isArray(cvRaw)) {
+        return { status: 400, body: { ok: false, error: 'Formato de archivo adjunto no válido.' } };
       }
 
-      const fileBuffer = Buffer.from(String(cvRaw.contentBase64), 'base64');
-      if (fileBuffer.byteLength === 0 || fileBuffer.byteLength > MAX_CV_BYTES) {
-        return {
-          status: 400,
-          body: {
-            ok: false,
-            error: 'El archivo adjunto supera el tamaño máximo permitido de 3 MB.',
-          },
-        };
-      }
+      if (typeof cvRaw.contentBase64 === 'string' && cvRaw.contentBase64.length > 0) {
+        const rawFilename = sanitizeSingleLine(cvRaw.filename) || 'curriculum.pdf';
+        if (!isAllowedCvFilename(rawFilename)) {
+          return {
+            status: 400,
+            body: {
+              ok: false,
+              error: 'El currículum debe estar en formato PDF, DOC o DOCX.',
+            },
+          };
+        }
 
-      attachments.push({
-        filename,
-        content: fileBuffer,
-        contentType: asTrimmedString(cvRaw.contentType) || undefined,
-      });
-      cvLabel = `${filename} (${Math.max(1, Math.round(fileBuffer.byteLength / 1024))} KB)`;
+        if (cvRaw.contentBase64.length > Math.ceil(FIELD_LIMITS.maxCvBytes * 1.45)) {
+          return {
+            status: 400,
+            body: {
+              ok: false,
+              error: 'El archivo adjunto supera el tamaño máximo permitido de 3 MB.',
+            },
+          };
+        }
+
+        if (!BASE64_REGEX.test(cvRaw.contentBase64)) {
+          return {
+            status: 400,
+            body: { ok: false, error: 'El archivo adjunto no es válido.' },
+          };
+        }
+
+        const safeFilename = sanitizeCvFilename(rawFilename);
+        const fileBuffer = Buffer.from(cvRaw.contentBase64, 'base64');
+
+        if (fileBuffer.byteLength === 0 || fileBuffer.byteLength > FIELD_LIMITS.maxCvBytes) {
+          return {
+            status: 400,
+            body: {
+              ok: false,
+              error: 'El archivo adjunto supera el tamaño máximo permitido de 3 MB.',
+            },
+          };
+        }
+
+        if (!hasValidMagicBytes(safeFilename, fileBuffer)) {
+          return {
+            status: 400,
+            body: {
+              ok: false,
+              error: 'El contenido del archivo no coincide con un PDF, DOC o DOCX válido.',
+            },
+          };
+        }
+
+        attachments.push({
+          filename: safeFilename,
+          content: fileBuffer,
+          contentType: sanitizeSingleLine(cvRaw.contentType) || undefined,
+        });
+        cvLabel = `${safeFilename} (${Math.max(1, Math.round(fileBuffer.byteLength / 1024))} KB)`;
+      }
     }
 
     to = recruitingRecipient;
-    replyTo = email;
-    subject = `[Web Asecomtel] Nueva candidatura - ${nombre}`;
+    replyTo = stripHeaderNewlines(email);
+    subject = stripHeaderNewlines(`[Web Asecomtel] Nueva candidatura - ${nombre}`);
     const rows = [
       { label: 'Formulario', value: 'Trabaja con nosotros' },
       { label: 'Nombre', value: nombre },
@@ -263,6 +393,17 @@ export async function processFormSubmission(rawPayload: unknown): Promise<SendFo
       buildInfoTable(rows)
     );
     text = rows.map((r) => `${r.label}: ${r.value}`).join('\n');
+  }
+
+  if (!smtpPass) {
+    return {
+      status: 422,
+      body: {
+        ok: false,
+        error:
+          'Falta configurar la contraseña SMTP (SMTP_PASS) en Secrets o variables de entorno del servidor para poder enviar correos.',
+      },
+    };
   }
 
   try {

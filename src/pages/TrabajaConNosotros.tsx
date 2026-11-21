@@ -12,6 +12,22 @@ import {
   FileText,
 } from 'lucide-react';
 import Reveal from '../components/Reveal';
+import {
+  FIELD_LIMITS,
+  isAllowedCvFilename,
+  validateEmail,
+  validatePersonName,
+  validatePhone,
+  validateTextBlock,
+} from '../../api/_validation';
+
+type ApplyField =
+  | 'nombre'
+  | 'email'
+  | 'telefono'
+  | 'sobreTi'
+  | 'cv'
+  | 'privacidadAceptada';
 
 export default function TrabajaConNosotros() {
   const [submitted, setSubmitted] = useState(false);
@@ -20,6 +36,7 @@ export default function TrabajaConNosotros() {
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ApplyField, string>>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
@@ -28,21 +45,37 @@ export default function TrabajaConNosotros() {
     telefono: '',
     sobreTi: '',
     privacidadAceptada: false,
+    website: '',
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSubmitError(null);
+    setFieldErrors((prev) => ({ ...prev, cv: undefined }));
 
     if (file) {
-      const maxSizeBytes = 3 * 1024 * 1024;
-      if (file.size > maxSizeBytes) {
-        setSubmitError('El currículum supera el tamaño máximo permitido de 3 MB.');
+      if (!isAllowedCvFilename(file.name)) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          cv: 'El currículum debe estar en formato PDF, DOC o DOCX.',
+        }));
         setSelectedFile(null);
         setSelectedFileName('');
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
+
+      if (file.size === 0 || file.size > FIELD_LIMITS.maxCvBytes) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          cv: 'El currículum debe pesar menos de 3 MB.',
+        }));
+        setSelectedFile(null);
+        setSelectedFileName('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
       setSelectedFile(file);
       setSelectedFileName(file.name);
     } else {
@@ -54,6 +87,7 @@ export default function TrabajaConNosotros() {
   const handleClearFile = () => {
     setSelectedFile(null);
     setSelectedFileName('');
+    setFieldErrors((prev) => ({ ...prev, cv: undefined }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -71,10 +105,38 @@ export default function TrabajaConNosotros() {
       reader.readAsDataURL(file);
     });
 
+  const validateApplyForm = () => {
+    const errors: Partial<Record<ApplyField, string>> = {};
+    const nombreErr = validatePersonName(formData.nombre, 'Tu nombre');
+    const emailErr = validateEmail(formData.email);
+    const phoneErr = validatePhone(formData.telefono, true);
+    const aboutErr = validateTextBlock(formData.sobreTi, {
+      required: false,
+      max: FIELD_LIMITS.aboutMax,
+      label: 'Sobre ti',
+    });
+
+    if (nombreErr) errors.nombre = nombreErr;
+    if (emailErr) errors.email = emailErr;
+    if (phoneErr) errors.telefono = phoneErr;
+    if (aboutErr) errors.sobreTi = aboutErr;
+    if (!formData.privacidadAceptada) {
+      errors.privacidadAceptada = 'Debes aceptar la Política de Privacidad para continuar.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitError(null);
+
+    if (!validateApplyForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       let cv: { filename: string; contentType: string; contentBase64: string } | undefined;
@@ -123,12 +185,14 @@ export default function TrabajaConNosotros() {
   const resetForm = () => {
     setSubmitted(false);
     setSubmitError(null);
+    setFieldErrors({});
     setFormData({
       nombre: '',
       email: '',
       telefono: '',
       sobreTi: '',
       privacidadAceptada: false,
+      website: '',
     });
     handleClearFile();
   };
@@ -151,9 +215,9 @@ export default function TrabajaConNosotros() {
   return (
     <div className="bg-white">
       {/* Page Banner */}
-      <section className="bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="bg-[#00355F] text-white py-14 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4">
             Trabaja con nosotros
           </h1>
           <p className="text-white/90 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -163,28 +227,28 @@ export default function TrabajaConNosotros() {
       </section>
 
       {/* Main Content */}
-      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-14 md:py-20 px-4 sm:px-6 lg:px-8 bg-[#EAF1FF]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
           {/* Left Column: ¿Buscas empleo? & ¿Que buscamos? */}
           <Reveal className="lg:col-span-5 space-y-6">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="bg-white border border-[#D2E4FF] rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#1b62b0] mb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#00355F] mb-1">
                   ¿Buscas empleo?
                 </p>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-semibold text-[#00355F] tracking-tight">
                   Estamos esperandote
                 </h2>
               </div>
 
               <div className="pt-2 border-t border-slate-200">
-                <h3 className="text-lg font-bold text-[#1b62b0] mb-4">¿Que buscamos?</h3>
+                <h3 className="text-lg font-bold text-[#00355F] mb-4">¿Que buscamos?</h3>
                 <ul className="space-y-4">
                   {requisitos.map((item) => {
                     const Icon = item.icon;
                     return (
                       <li key={item.text} className="flex items-start gap-3.5">
-                        <div className="w-9 h-9 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-9 h-9 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0 mt-0.5">
                           <Icon className="w-4 h-4" />
                         </div>
                         <span className="text-slate-700 text-sm sm:text-base leading-relaxed font-medium">
@@ -197,13 +261,13 @@ export default function TrabajaConNosotros() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-[#206ec5] via-[#1b62b0] to-[#144a84] text-white rounded-xl p-6 sm:p-7 shadow-md space-y-3">
-              <h3 className="text-xl font-extrabold tracking-tight">¿Cumples los requisitos?</h3>
+            <div className="bg-[#00355F] text-white rounded-xl p-6 sm:p-7 shadow-md space-y-3">
+              <h3 className="text-xl font-semibold tracking-tight">¿Cumples los requisitos?</h3>
               <p className="text-white/90 text-sm sm:text-base leading-relaxed">
                 Envianos un correo electronico a{' '}
                 <a
                   href="mailto:seleccion@asecomtel.es"
-                  className="font-bold text-white underline underline-offset-4 hover:text-blue-100 transition-colors"
+                  className="font-bold text-white underline underline-offset-4 hover:text-[#D2E4FF] transition-colors"
                 >
                   seleccion@asecomtel.es
                 </a>{' '}
@@ -211,7 +275,7 @@ export default function TrabajaConNosotros() {
               </p>
               <a
                 href="mailto:seleccion@asecomtel.es"
-                className="inline-flex items-center gap-2 bg-white text-[#1b62b0] font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors mt-1"
+                className="inline-flex items-center gap-2 bg-white text-[#00355F] font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-[#EAF1FF] transition-colors mt-1"
               >
                 <Mail className="w-4 h-4" />
                 <span>seleccion@asecomtel.es</span>
@@ -222,7 +286,7 @@ export default function TrabajaConNosotros() {
           {/* Right Column: Application Form + Data Protection Info */}
           <Reveal
             delay={0.08}
-            className="lg:col-span-7 bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs"
+            className="lg:col-span-7 bg-white border border-[#D2E4FF] rounded-xl p-6 sm:p-8 shadow-xs"
           >
             {submitted ? (
               <div className="text-center py-14 space-y-4">
@@ -236,16 +300,28 @@ export default function TrabajaConNosotros() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="text-sm font-semibold text-[#1b62b0] hover:underline cursor-pointer"
+                    className="text-sm font-semibold text-[#00355F] hover:underline cursor-pointer"
                   >
                     Enviar otra candidatura
                   </button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                {/* Honeypot anti-spam field */}
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  className="hidden"
+                />
+
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1b62b0] mb-1">
+                  <h2 className="text-2xl font-bold text-[#00355F] mb-1">
                     Formulario de candidatura
                   </h2>
                   <p className="text-slate-600 text-sm">
@@ -265,11 +341,24 @@ export default function TrabajaConNosotros() {
                     id="empleo-nombre"
                     type="text"
                     required
+                    maxLength={FIELD_LIMITS.nameMax}
+                    autoComplete="name"
+                    aria-invalid={Boolean(fieldErrors.nombre)}
                     value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, nombre: e.target.value });
+                      if (fieldErrors.nombre) setFieldErrors({ ...fieldErrors, nombre: undefined });
+                    }}
                     placeholder="Tu nombre"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                      fieldErrors.nombre
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                    }`}
                   />
+                  {fieldErrors.nombre && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.nombre}</p>
+                  )}
                 </div>
 
                 {/* Tu correo electrónico & Telefono */}
@@ -285,11 +374,24 @@ export default function TrabajaConNosotros() {
                       id="empleo-email"
                       type="email"
                       required
+                      maxLength={FIELD_LIMITS.emailMax}
+                      autoComplete="email"
+                      aria-invalid={Boolean(fieldErrors.email)}
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined });
+                      }}
                       placeholder="Tu correo electrónico"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                      className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                        fieldErrors.email
+                          ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                          : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                      }`}
                     />
+                    {fieldErrors.email && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -297,17 +399,35 @@ export default function TrabajaConNosotros() {
                       htmlFor="empleo-telefono"
                       className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                     >
-                      Telefono <span className="text-red-500">*</span>
+                      Teléfono <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="empleo-telefono"
                       type="tel"
+                      inputMode="tel"
                       required
+                      maxLength={FIELD_LIMITS.phoneMax}
+                      autoComplete="tel"
+                      aria-invalid={Boolean(fieldErrors.telefono)}
                       value={formData.telefono}
-                      onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                      placeholder="Telefono"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all"
+                      onChange={(e) => {
+                        setFormData({ ...formData, telefono: e.target.value });
+                        if (fieldErrors.telefono) {
+                          setFieldErrors({ ...fieldErrors, telefono: undefined });
+                        }
+                      }}
+                      placeholder="Teléfono (ej. 600 123 456)"
+                      className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all ${
+                        fieldErrors.telefono
+                          ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                          : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                      }`}
                     />
+                    {fieldErrors.telefono && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">
+                        {fieldErrors.telefono}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -322,11 +442,27 @@ export default function TrabajaConNosotros() {
                   <textarea
                     id="empleo-sobre-ti"
                     rows={4}
+                    maxLength={FIELD_LIMITS.aboutMax}
+                    aria-invalid={Boolean(fieldErrors.sobreTi)}
                     value={formData.sobreTi}
-                    onChange={(e) => setFormData({ ...formData, sobreTi: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, sobreTi: e.target.value });
+                      if (fieldErrors.sobreTi) {
+                        setFieldErrors({ ...fieldErrors, sobreTi: undefined });
+                      }
+                    }}
                     placeholder="Cuéntanos brevemente tu experiencia comercial o perfil profesional..."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:border-[#1b62b0] focus:ring-2 focus:ring-[#1b62b0]/20 outline-hidden transition-all resize-none"
+                    className={`w-full px-3.5 py-2.5 rounded-lg border bg-white text-slate-800 text-sm focus:ring-2 outline-hidden transition-all resize-none ${
+                      fieldErrors.sobreTi
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-[#00355F] focus:ring-[#D2E4FF]'
+                    }`}
                   />
+                  {fieldErrors.sobreTi && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">
+                      {fieldErrors.sobreTi}
+                    </p>
+                  )}
                 </div>
 
                 {/* Adjuntanos tu Curriculum */}
@@ -337,7 +473,11 @@ export default function TrabajaConNosotros() {
                   >
                     Adjuntanos tu Curriculum
                   </label>
-                  <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-lg border border-dashed border-slate-300 bg-white">
+                  <div
+                    className={`flex flex-wrap items-center gap-3 p-3.5 rounded-lg border border-dashed bg-white ${
+                      fieldErrors.cv ? 'border-red-400' : 'border-slate-300'
+                    }`}
+                  >
                     <input
                       ref={fileInputRef}
                       id="empleo-cv"
@@ -348,15 +488,15 @@ export default function TrabajaConNosotros() {
                     />
                     <label
                       htmlFor="empleo-cv"
-                      className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-lg border border-slate-300 cursor-pointer transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#EAF1FF] hover:bg-[#D2E4FF]/70 text-[#00355F] font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-lg border border-[#D2E4FF] cursor-pointer transition-colors"
                     >
-                      <Upload className="w-4 h-4 text-[#1b62b0]" />
+                      <Upload className="w-4 h-4 text-[#00355F]" />
                       <span>Seleccionar archivo</span>
                     </label>
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <FileText className="w-4 h-4 text-slate-400 shrink-0" />
                       <span className="text-xs sm:text-sm text-slate-600 truncate">
-                        {selectedFileName || 'Ningún archivo seleccionado'}
+                        {selectedFileName || 'Ningún archivo seleccionado (PDF, DOC, DOCX · máx. 3 MB)'}
                       </span>
                     </div>
                     {selectedFileName && (
@@ -370,6 +510,9 @@ export default function TrabajaConNosotros() {
                       </button>
                     )}
                   </div>
+                  {fieldErrors.cv && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{fieldErrors.cv}</p>
+                  )}
                 </div>
 
                 {/* Política de Privacidad */}
@@ -379,17 +522,25 @@ export default function TrabajaConNosotros() {
                       type="checkbox"
                       required
                       checked={formData.privacidadAceptada}
-                      onChange={(e) =>
-                        setFormData({ ...formData, privacidadAceptada: e.target.checked })
-                      }
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-[#1b62b0] focus:ring-[#1b62b0] cursor-pointer"
+                      onChange={(e) => {
+                        setFormData({ ...formData, privacidadAceptada: e.target.checked });
+                        if (fieldErrors.privacidadAceptada) {
+                          setFieldErrors({ ...fieldErrors, privacidadAceptada: undefined });
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-[#00355F] focus:ring-[#00355F] cursor-pointer"
                     />
                     <span>He leído y acepto la Política de Privacidad.</span>
                   </label>
+                  {fieldErrors.privacidadAceptada && (
+                    <p className="text-xs font-medium text-red-600">
+                      {fieldErrors.privacidadAceptada}
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => setPrivacyModalOpen(true)}
-                    className="text-xs text-[#1b62b0] hover:underline font-medium text-left cursor-pointer block"
+                    className="text-xs text-[#00355F] hover:underline font-medium text-left cursor-pointer block"
                   >
                     Leer la Política de Privacidad antes de aceptarla
                   </button>
@@ -407,7 +558,7 @@ export default function TrabajaConNosotros() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#1b62b0] hover:bg-[#165194] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-[#00355F] hover:bg-[#002645] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>{isSubmitting ? 'Enviando candidatura...' : 'Enviar candidatura'}</span>
                   {!isSubmitting && <ArrowRight className="w-4 h-4" />}
@@ -453,10 +604,10 @@ export default function TrabajaConNosotros() {
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#1b62b0]/10 text-[#1b62b0] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-[#EAF1FF] text-[#00355F] flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-[#1b62b0]">Política de Privacidad</h3>
+              <h3 className="text-xl font-bold text-[#00355F]">Política de Privacidad</h3>
             </div>
 
             <div className="text-slate-600 text-sm leading-relaxed space-y-3">
@@ -483,7 +634,7 @@ export default function TrabajaConNosotros() {
                 información enviando una solicitud a{' '}
                 <a
                   href="mailto:seleccion@asecomtel.es"
-                  className="text-[#1b62b0] font-semibold hover:underline"
+                  className="text-[#00355F] font-semibold hover:underline"
                 >
                   seleccion@asecomtel.es
                 </a>{' '}
@@ -496,9 +647,10 @@ export default function TrabajaConNosotros() {
                 type="button"
                 onClick={() => {
                   setFormData((prev) => ({ ...prev, privacidadAceptada: true }));
+                  setFieldErrors((prev) => ({ ...prev, privacidadAceptada: undefined }));
                   setPrivacyModalOpen(false);
                 }}
-                className="bg-[#1b62b0] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#165194] transition-colors cursor-pointer"
+                className="bg-[#00355F] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#002645] transition-colors cursor-pointer"
               >
                 Aceptar y cerrar
               </button>

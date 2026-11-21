@@ -7,12 +7,12 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="bg-gradient-to-b from-[#1e6ac0] via-[#1b62b0] to-[#165194] text-white">
+      <footer className="bg-[#00355F] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
             {/* Column 1: Asecomtel & Address */}
             <div className="space-y-4">
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-6">
+              <h3 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-6">
                 Asecomtel
               </h3>
               <ul className="space-y-4 text-white/95 text-base leading-relaxed">
@@ -26,7 +26,7 @@ export default function Footer() {
                     <span>Telefonos de contacto: </span>
                     <a
                       href="tel:968959545"
-                      className="font-semibold underline underline-offset-2 hover:text-blue-100 transition-colors"
+                      className="font-semibold underline underline-offset-2 hover:text-[#EAF1FF] transition-colors"
                     >
                       968 959 545
                     </a>
@@ -38,7 +38,7 @@ export default function Footer() {
                     <span>E-MAIL: </span>
                     <a
                       href="mailto:info@asecomtel.es"
-                      className="font-semibold underline underline-offset-2 hover:text-blue-100 transition-colors"
+                      className="font-semibold underline underline-offset-2 hover:text-[#EAF1FF] transition-colors"
                     >
                       info@asecomtel.es
                     </a>
@@ -49,7 +49,7 @@ export default function Footer() {
 
             {/* Column 2: Enlaces rápidos */}
             <div className="space-y-4">
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-6">
+              <h3 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-6">
                 Enlaces rápidos
               </h3>
               <ul className="space-y-3 text-white/95 text-base font-normal">
@@ -82,7 +82,7 @@ export default function Footer() {
 
             {/* Column 3: Redes */}
             <div className="space-y-4">
-              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-6">
+              <h3 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-6">
                 Redes
               </h3>
               <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Sub-bar */}
-        <div className="bg-[#144a84] border-t border-white/10 text-white/90 py-5 px-4 sm:px-6 lg:px-8 text-xs sm:text-sm">
+        <div className="bg-[#00203a] border-t border-white/10 text-white/90 py-5 px-4 sm:px-6 lg:px-8 text-xs sm:text-sm">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
             <p>Copyright © 2020 Asecomtel. Todos los derechos reservados</p>
             <div className="flex flex-wrap items-center justify-center gap-2 text-white/90">
@@ -154,7 +154,7 @@ export default function Footer() {
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-2xl font-bold text-[#1b62b0] mb-4">{legalModalContent}</h3>
+            <h3 className="text-2xl font-bold text-[#00355F] mb-4">{legalModalContent}</h3>
             <div className="text-slate-600 text-sm leading-relaxed space-y-3">
               <p>
                 <strong>Asecomtel</strong> cumple íntegramente con la legislación vigente en materia
@@ -180,7 +180,7 @@ export default function Footer() {
               <button
                 type="button"
                 onClick={() => setLegalModalContent(null)}
-                className="bg-[#1b62b0] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#165194] transition-colors cursor-pointer"
+                className="bg-[#00355F] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-[#002645] transition-colors cursor-pointer"
               >
                 Cerrar
               </button>

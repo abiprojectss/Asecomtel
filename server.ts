@@ -14,7 +14,14 @@ async function startServer() {
   app.use(express.json({ limit: '6mb' }));
 
   app.post('/api/send-form', async (req, res) => {
-    const result = await processFormSubmission(req.body);
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIp =
+      typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : Array.isArray(forwarded) && forwarded.length > 0
+          ? forwarded[0].split(',')[0].trim()
+          : req.ip || '';
+    const result = await processFormSubmission(req.body, clientIp);
     res.status(result.status).json(result.body);
   });
 
