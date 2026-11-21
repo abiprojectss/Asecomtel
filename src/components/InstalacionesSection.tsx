@@ -50,10 +50,10 @@ export default function InstalacionesSection() {
     mass: 0.35,
   });
 
-  // Scroll down (0 -> 1) moves strip right (-32% -> -8%); scroll up moves strip left
-  const x = useTransform(smoothProgress, [0, 1], ['-32%', '-8%']);
+  // Scroll down (0 -> 1) moves strip right (-35% -> -10%); scroll up moves strip left
+  const x = useTransform(smoothProgress, [0, 1], ['-35%', '-10%']);
 
-  const stripPhotos = [...FACILITY_PHOTOS, ...FACILITY_PHOTOS, ...FACILITY_PHOTOS];
+  const stripPhotos = [...FACILITY_PHOTOS, ...FACILITY_PHOTOS];
 
   return (
     <section
@@ -90,8 +90,8 @@ export default function InstalacionesSection() {
                 src={photo.src}
                 alt={photo.alt}
                 referrerPolicy="no-referrer"
+                decoding="async"
                 className="block w-full h-full object-cover"
-                loading="lazy"
               />
             </div>
           ))}

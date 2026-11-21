@@ -76,6 +76,7 @@ export default function Landing() {
         <img
           src="/assets/aistudio/Mujeraltelefono_27a6f091.png"
           alt="Soluciones de telecomunicaciones para empresas en toda España"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.78] contrast-[1.05]"
         />
         {/* Dark overlay for contrast and legibility matching Figma aesthetic */}
@@ -142,12 +143,13 @@ export default function Landing() {
           src={commercialVisitBg}
           alt="Asesor comercial de telecomunicaciones reunido con cliente empresarial"
           referrerPolicy="no-referrer"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         {/* Subtle dark/blue overlay for depth and contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/65 via-[#0f2f57]/60 to-slate-900/75 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-[#0f2f57]/65 to-slate-900/80" />
 
-        <Reveal className="relative z-10 max-w-2xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/40 p-6 sm:p-10">
+        <Reveal className="relative z-10 max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl border border-white/40 p-6 sm:p-10">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1b62b0] text-center mb-8 tracking-tight">
             ¿Quieres que te visite un comercial?
           </h2>
