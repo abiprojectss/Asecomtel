@@ -56,7 +56,7 @@ const VALUE_SERVICES: ValueServiceItem[] = [
 
 export default function ValueServicesShowcase() {
   return (
-    <section className="relative overflow-hidden py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-white border-t border-slate-100">
+    <section className="relative overflow-hidden pt-20 md:pt-28 pb-28 md:pb-40 lg:pb-44 px-4 sm:px-6 lg:px-8 bg-white border-t border-slate-100">
       <CorporateTelecomBackdrop />
 
       <div className="relative z-10 max-w-6xl mx-auto">

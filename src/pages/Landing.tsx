@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import CoreServicesShowcase from '../components/CoreServicesShowcase';
 import ValueServicesShowcase from '../components/ValueServicesShowcase';
+import QuienesSomosBackdrop from '../components/QuienesSomosBackdrop';
 import Reveal from '../components/Reveal';
 import {
   FIELD_LIMITS,
@@ -140,8 +141,7 @@ export default function Landing() {
             className="mx-auto lg:mx-0 lg:w-[54%] xl:w-[50%] max-w-2xl text-center lg:text-left"
           >
             <h1 className="text-[clamp(2.25rem,4.1vw,3.65rem)] font-semibold text-[#00355F] tracking-tight leading-[1.08] text-balance">
-              Soluciones de telecomunicaciones{' '}
-              <span className="text-[#004E8C]">para empresas</span> en toda España
+              Soluciones de telecomunicaciones para empresas en toda España
             </h1>
 
             <p className="mt-5 text-[#00355F]/90 font-medium text-base sm:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
@@ -172,8 +172,10 @@ export default function Landing() {
       {/* QUIENES SOMOS + 4 CORE SERVICES */}
       <div className="bg-white">
         {/* QUIENES SOMOS SECTION */}
-        <section className="relative z-10 pt-20 md:pt-24 pb-12 md:pb-16 px-4 sm:px-6 lg:px-8">
-          <Reveal className="max-w-4xl mx-auto text-center">
+        <section className="relative overflow-hidden z-10 py-28 md:py-36 lg:py-40 px-4 sm:px-6 lg:px-8">
+          <QuienesSomosBackdrop />
+
+          <Reveal className="relative z-10 max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-semibold text-[#00355F] tracking-tight">
               Quienes somos
             </h2>
