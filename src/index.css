@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Custom aesthetic vertical scrollbar matching Asecomtel brand */
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #eef4fb;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1b62b0 0%, #144a84 100%);
+    border-radius: 9999px;
+    border: 2px solid #eef4fb;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #165194 0%, #0f3968 100%);
+  }
+
+  /* Firefox scrollbar support without overriding WebKit custom scrollbar */
+  @supports (-moz-appearance: none) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: #1b62b0 #eef4fb;
+    }
+  }
+}

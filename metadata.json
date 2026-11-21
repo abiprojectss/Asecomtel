@@ -1,0 +1,6 @@
+{
+  "name": "Asecomtel - Telecomunicaciones para Empresas",
+  "description": "Distribuidor de telefonía móvil, fibra óptica, IP fija y centralitas virtuales para empresas en toda España.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
